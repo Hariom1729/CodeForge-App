@@ -1,7 +1,7 @@
 import asyncio
 from sqlalchemy.future import select
 from database import AsyncSessionLocal
-from models import Problem
+from models import Problem, TestCase
 
 async def populate_testcases():
     async with AsyncSessionLocal() as session:
@@ -9,24 +9,35 @@ async def populate_testcases():
         problems = result.scalars().all()
         
         for problem in problems:
-            if problem.title == "Reverse the array":
-                # Already explicitly set up earlier, keep it
-                continue
-                
-            test_cases = []
             if problem.examples:
                 for ex in problem.examples:
-                    test_cases.append({
-                        "input": ex.get("input", ""),
-                        "expected_output": ex.get("output", "Executed successfully!")
-                    })
+                    # visible case
+                    session.add(TestCase(
+                        problem_id=problem.id,
+                        input=ex.get("input", ""),
+                        expected_output=ex.get("output", "Executed successfully!"),
+                        is_hidden=False
+                    ))
+                    # hidden case (dummy)
+                    session.add(TestCase(
+                        problem_id=problem.id,
+                        input="Hidden " + ex.get("input", ""),
+                        expected_output=ex.get("output", "Executed successfully!"),
+                        is_hidden=True
+                    ))
             else:
-                test_cases.append({
-                    "input": "Generic input",
-                    "expected_output": "Executed successfully!"
-                })
-                
-            problem.test_cases = test_cases
+                session.add(TestCase(
+                    problem_id=problem.id,
+                    input="Generic input",
+                    expected_output="Executed successfully!",
+                    is_hidden=False
+                ))
+                session.add(TestCase(
+                    problem_id=problem.id,
+                    input="Hidden Generic input",
+                    expected_output="Executed successfully!",
+                    is_hidden=True
+                ))
                 
         await session.commit()
         print(f"Successfully populated test_cases for {len(problems)} problems!")
