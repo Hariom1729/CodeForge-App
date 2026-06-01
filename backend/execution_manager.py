@@ -21,9 +21,9 @@ class ExecutionManager:
             print(f"Warning: Docker not available ({e}). Execution will fail.")
             self.client = None
 
-    async def execute_code(self, language: str, code: str) -> Dict[str, Any]:
+    async def execute_code(self, language: str, code: str, test_cases: list = None) -> Dict[str, Any]:
         if language not in RUNTIME_MAP:
-            return {"status": "error", "output": f"Unsupported language: {language}", "execution_time": 0.0}
+            return {"status": "error", "output": f"Unsupported language: {language}", "execution_time": 0.0, "test_results": None}
             
         if not self.client:
              return {"status": "error", "output": "Docker daemon is not available on the backend.", "execution_time": 0.0}
@@ -76,10 +76,30 @@ class ExecutionManager:
                 if status_code == 124:
                     logs = "Execution Timed Out (10 seconds limit)"
 
+                # --- Auto Grader Logic ---
+                test_results = None
+                if status == "success" and test_cases:
+                    test_results = []
+                    for tc in test_cases:
+                        expected = str(tc.get("expected_output", "")).strip()
+                        actual = logs.strip()
+                        passed = expected in actual if expected else True
+                        test_results.append({
+                            "input": tc.get("input", ""),
+                            "expected": expected,
+                            "actual": actual,
+                            "passed": passed
+                        })
+                    
+                    # If any test case failed, change status to 'failed_tests'
+                    if any(not tr["passed"] for tr in test_results):
+                        status = "failed_tests"
+
                 return {
                     "status": status,
                     "output": logs,
-                    "execution_time": execution_time
+                    "execution_time": execution_time,
+                    "test_results": test_results
                 }
 
             except Exception as e:
@@ -87,7 +107,8 @@ class ExecutionManager:
                 return {
                     "status": "error",
                     "output": str(e),
-                    "execution_time": round(end_time - start_time, 3)
+                    "execution_time": round(end_time - start_time, 3),
+                    "test_results": None
                 }
 
 execution_manager = ExecutionManager()

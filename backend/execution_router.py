@@ -15,11 +15,13 @@ class ExecutionRequest(BaseModel):
     language: str
     code: str
     project_id: uuid.UUID | None = None
+    problem_id: uuid.UUID | None = None
 
 class ExecutionResponse(BaseModel):
     output: str
     execution_time: float
     status: str
+    test_results: list | None = None
 
 @router.post("/", response_model=ExecutionResponse)
 async def execute_code(
@@ -28,8 +30,15 @@ async def execute_code(
     db: AsyncSession = Depends(get_db)
 ):
     # Enforce user limits here if necessary (e.g. check plan limits)
+    
+    test_cases = []
+    if req.problem_id:
+        prob_res = await db.execute(select(models.Problem).filter(models.Problem.id == req.problem_id))
+        problem = prob_res.scalars().first()
+        if problem and problem.test_cases:
+            test_cases = problem.test_cases
 
-    result = await execution_manager.execute_code(req.language, req.code)
+    result = await execution_manager.execute_code(req.language, req.code, test_cases)
 
     # Log the execution
     db_execution = models.Execution(
@@ -46,5 +55,6 @@ async def execute_code(
     return ExecutionResponse(
         output=result["output"],
         execution_time=result["execution_time"],
-        status=result["status"]
+        status=result["status"],
+        test_results=result.get("test_results")
     )

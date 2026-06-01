@@ -19,8 +19,11 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
   const [selectedLanguage, setSelectedLanguage] = useState('cpp');
   const [code, setCode] = useState('');
   const [output, setOutput] = useState("");
+  const [testResults, setTestResults] = useState<any[] | null>(null);
+  const [executionStatus, setExecutionStatus] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
+  const [consoleTab, setConsoleTab] = useState('console');
   const [problem, setProblem] = useState<any>(null);
 
   useEffect(() => {
@@ -89,13 +92,20 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
     setOutput("Executing...");
     
     try {
-      const res = await api.post("/execute/", {
+      const res = await api.post("/execute", {
         language: selectedLanguage,
-        code: code
+        code,
+        projectId: projectId !== 'demo' ? projectId : undefined,
+        problem_id: problem?.id
       });
-      setOutput(res.data.output + `\n\n[Finished in ${res.data.execution_time}s]`);
-    } catch (error: any) {
-      setOutput(error.response?.data?.detail || "Execution failed.");
+      setOutput(res.data.output);
+      setTestResults(res.data.test_results || null);
+      setExecutionStatus(res.data.status);
+      setConsoleTab('testcases');
+    } catch (err: any) {
+      setOutput(err.response?.data?.detail || "Execution failed");
+      setExecutionStatus("error");
+      setTestResults(null);
     } finally {
       setIsExecuting(false);
     }
@@ -242,16 +252,49 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
 
           {/* Console Output */}
           <div className="h-[30%] bg-[#282828] rounded-lg border border-[#333] flex flex-col overflow-hidden">
-            <div className="h-10 border-b border-[#333] bg-[#282828] flex items-center px-4 text-sm font-semibold gap-6 text-zinc-400 shrink-0">
-              <button className="flex items-center gap-2 hover:text-white text-white border-b-2 border-white h-full px-1">
-                <Terminal size={14} /> Testcases
-              </button>
-              <button className="flex items-center gap-2 hover:text-white h-full px-1">
-                Test Result
-              </button>
-            </div>
-            <div className="flex-1 p-4 font-mono text-sm overflow-auto whitespace-pre-wrap text-[#4ade80]">
-              {output || "Run code to see output..."}
+            <div className="flex-1 bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden flex flex-col">
+              <div className="bg-[#2d2d2d] border-b border-[#333] p-2 flex items-center justify-between">
+                <div className="flex items-center gap-4 text-xs font-semibold text-zinc-400">
+                  <span className={`cursor-pointer ${consoleTab !== 'testcases' ? 'text-white' : ''}`} onClick={() => setConsoleTab('console')}>&gt;_ Console</span>
+                  <span className={`cursor-pointer ${consoleTab === 'testcases' ? 'text-white' : ''}`} onClick={() => setConsoleTab('testcases')}>Test Result</span>
+                </div>
+              </div>
+              <div className="p-4 flex-1 overflow-auto font-mono text-sm bg-[#1e1e1e] text-zinc-300 whitespace-pre-wrap">
+                {consoleTab === 'testcases' && testResults ? (
+                  <div className="space-y-6">
+                    {executionStatus === 'success' ? (
+                      <h2 className="text-2xl font-bold text-green-500">Accepted</h2>
+                    ) : executionStatus === 'failed_tests' ? (
+                      <h2 className="text-2xl font-bold text-red-500">Wrong Answer</h2>
+                    ) : null}
+                    
+                    {testResults.map((tr, idx) => (
+                      <div key={idx} className="bg-[#282828] p-4 rounded-md border border-[#333]">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className={`w-2 h-2 rounded-full ${tr.passed ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <span className="font-bold text-white">Test Case {idx + 1}</span>
+                        </div>
+                        <div className="space-y-3 text-xs">
+                          <div>
+                            <span className="text-zinc-500 block mb-1">Input</span>
+                            <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.input}</div>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500 block mb-1">Output</span>
+                            <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.actual}</div>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500 block mb-1">Expected</span>
+                            <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.expected}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  output || "Run code to see output..."
+                )}
+              </div>
             </div>
           </div>
         </div>
