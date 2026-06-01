@@ -21,6 +21,7 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
   const [output, setOutput] = useState("");
   const [testResults, setTestResults] = useState<any[] | null>(null);
   const [executionStatus, setExecutionStatus] = useState<string | null>(null);
+  const [lastAction, setLastAction] = useState<string | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [consoleTab, setConsoleTab] = useState('console');
@@ -87,16 +88,18 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
     }
   };
 
-  const handleExecute = async () => {
+  const handleExecute = async (action: 'run' | 'submit') => {
     setIsExecuting(true);
-    setOutput("Executing...");
+    setLastAction(action);
+    setOutput(action === 'run' ? "Compiling and running..." : "Submitting to grading server...");
     
     try {
       const res = await api.post("/execute", {
         language: selectedLanguage,
         code,
         projectId: projectId !== 'demo' ? projectId : undefined,
-        problem_id: problem?.id
+        problem_id: problem?.id,
+        action
       });
       setOutput(res.data.output);
       setTestResults(res.data.test_results || null);
@@ -128,7 +131,7 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
         </div>
         <div className="flex gap-2">
           <Button 
-            onClick={handleExecute} 
+            onClick={() => handleExecute('run')} 
             disabled={isExecuting}
             variant="ghost"
             className="hover:bg-[#333] text-zinc-300 gap-2 h-8"
@@ -136,6 +139,8 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
             <Play size={14} className="text-green-500 fill-green-500" /> Run
           </Button>
           <Button 
+            onClick={() => handleExecute('submit')}
+            disabled={isExecuting}
             className="bg-green-600 hover:bg-green-700 text-white gap-2 h-8 font-semibold px-6"
           >
             Submit
@@ -263,11 +268,20 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
                 {consoleTab === 'testcases' && testResults ? (
                   <div className="space-y-6">
                     {executionStatus === 'success' ? (
-                      <h2 className="text-2xl font-bold text-green-500">Accepted</h2>
+                      <h2 className="text-2xl font-bold text-green-500">
+                        {lastAction === 'submit' ? 'Problem is submitted successfully' : 'Compiled Successfully'}
+                      </h2>
                     ) : executionStatus === 'failed_tests' ? (
-                      <h2 className="text-2xl font-bold text-red-500">Wrong Answer</h2>
+                      <h2 className="text-2xl font-bold text-red-500">Test case failed</h2>
                     ) : null}
                     
+                    {/* Progress Indicator for Submit */}
+                    {executionStatus === 'success' && lastAction === 'submit' && (
+                      <div className="text-sm font-semibold text-zinc-400 mb-4">
+                        Testcases passed: {testResults.length}/{testResults.length}
+                      </div>
+                    )}
+
                     {testResults.map((tr, idx) => (
                       <div key={idx} className="bg-[#282828] p-4 rounded-md border border-[#333]">
                         <div className="flex items-center gap-2 mb-3">

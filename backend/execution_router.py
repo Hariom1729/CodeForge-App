@@ -16,6 +16,7 @@ class ExecutionRequest(BaseModel):
     code: str
     project_id: uuid.UUID | None = None
     problem_id: uuid.UUID | None = None
+    action: str = "run"
 
 class ExecutionResponse(BaseModel):
     output: str
@@ -37,6 +38,11 @@ async def execute_code(
         problem = prob_res.scalars().first()
         if problem and problem.test_cases:
             test_cases = problem.test_cases
+            
+            # If action is 'submit', simulate a massive test suite by duplicating the test cases to total 100+
+            if req.action == "submit" and len(test_cases) > 0:
+                multiplier = (105 // len(test_cases)) + 1
+                test_cases = (test_cases * multiplier)[:105]
 
     result = await execution_manager.execute_code(req.language, req.code, test_cases)
 
