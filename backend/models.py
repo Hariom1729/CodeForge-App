@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, Text, DateTime, JSON
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, Text, DateTime, JSON, Boolean
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from database import Base
 
@@ -59,5 +60,17 @@ class Problem(Base):
     examples = Column(JSON, default=list)
     constraints = Column(JSON, default=list)
     time_limit_ms = Column(Integer, default=2000)
-    test_cases = Column(JSON, default=list)
+    memory_limit_mb = Column(Integer, default=256)
     starter_code = Column(JSON, default=dict)
+    
+    test_cases = relationship("TestCase", back_populates="problem", cascade="all, delete-orphan")
+
+class TestCase(Base):
+    __tablename__ = "test_cases"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    problem_id = Column(UUID(as_uuid=True), ForeignKey("problems.id", ondelete="CASCADE"))
+    input = Column(Text, nullable=False)
+    expected_output = Column(Text, nullable=False)
+    is_hidden = Column(Boolean, default=False)
+    
+    problem = relationship("Problem", back_populates="test_cases")

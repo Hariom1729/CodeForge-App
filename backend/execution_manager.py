@@ -21,9 +21,9 @@ class ExecutionManager:
             print(f"Warning: Docker not available ({e}). Execution will fail.")
             self.client = None
 
-    async def execute_code(self, language: str, code: str, test_cases: list = None) -> Dict[str, Any]:
+    async def execute_code(self, language: str, code: str, test_cases: list = None, time_limit_ms: int = 2000, memory_limit_mb: int = 256) -> Dict[str, Any]:
         if language not in RUNTIME_MAP:
-            return {"status": "error", "output": f"Unsupported language: {language}", "execution_time": 0.0, "test_results": None}
+            return {"status": "Compilation Error", "output": f"Unsupported language: {language}", "execution_time": 0.0, "test_results": None}
             
         if not self.client:
              return {"status": "error", "output": "Docker daemon is not available on the backend.", "execution_time": 0.0}
@@ -57,9 +57,10 @@ class ExecutionManager:
                     )
                 )
 
+                time_limit_secs = time_limit_ms / 1000.0
                 # Wait for container to finish or timeout
                 try:
-                    result = await loop.run_in_executor(None, lambda: container.wait(timeout=10))
+                    result = await loop.run_in_executor(None, lambda: container.wait(timeout=time_limit_secs + 0.5))
                     status_code = result.get('StatusCode', 1)
                 except Exception as e: # Catch timeout specifically if requests raises it
                     status_code = 124 # Custom timeout code
@@ -72,13 +73,17 @@ class ExecutionManager:
                 end_time = asyncio.get_event_loop().time()
                 execution_time = round(end_time - start_time, 3)
 
-                status = "success" if status_code == 0 else "error"
-                if status_code == 124:
-                    logs = "Execution Timed Out (10 seconds limit)"
+                status = "Accepted" if status_code == 0 else "Runtime Error"
+                if status_code == 124 or execution_time * 1000 > time_limit_ms:
+                    status = "Time Limit Exceeded"
+                elif status_code == 137: # Docker OOM Kill
+                    status = "Memory Limit Exceeded"
+                elif status_code != 0 and "error" in logs.lower() and "compile" in logs.lower():
+                    status = "Compilation Error"
 
                 # --- Auto Grader Logic ---
                 test_results = None
-                if status == "success" and test_cases:
+                if status == "Accepted" and test_cases:
                     test_results = []
                     for tc in test_cases:
                         expected = str(tc.get("expected_output", "")).strip()
@@ -88,12 +93,13 @@ class ExecutionManager:
                             "input": tc.get("input", ""),
                             "expected": expected,
                             "actual": actual,
-                            "passed": passed
+                            "passed": passed,
+                            "is_hidden": tc.get("is_hidden", False)
                         })
                     
                     # If any test case failed, change status to 'failed_tests'
                     if any(not tr["passed"] for tr in test_results):
-                        status = "failed_tests"
+                        status = "Wrong Answer"
 
                 return {
                     "status": status,

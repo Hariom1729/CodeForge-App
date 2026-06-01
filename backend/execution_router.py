@@ -33,18 +33,27 @@ async def execute_code(
     # Enforce user limits here if necessary (e.g. check plan limits)
     
     test_cases = []
+    time_limit_ms = 2000
+    memory_limit_mb = 256
+    
     if req.problem_id:
         prob_res = await db.execute(select(models.Problem).filter(models.Problem.id == req.problem_id))
         problem = prob_res.scalars().first()
-        if problem and problem.test_cases:
-            test_cases = problem.test_cases
+        if problem:
+            time_limit_ms = problem.time_limit_ms
+            memory_limit_mb = problem.memory_limit_mb
             
-            # If action is 'submit', simulate a massive test suite by duplicating the test cases to total 100+
-            if req.action == "submit" and len(test_cases) > 0:
-                multiplier = (105 // len(test_cases)) + 1
-                test_cases = (test_cases * multiplier)[:105]
+            tc_query = select(models.TestCase).filter(models.TestCase.problem_id == req.problem_id)
+            if req.action == "run":
+                tc_query = tc_query.filter(models.TestCase.is_hidden == False)
+            
+            tc_res = await db.execute(tc_query)
+            test_cases = [
+                {"input": tc.input, "expected_output": tc.expected_output, "is_hidden": tc.is_hidden}
+                for tc in tc_res.scalars().all()
+            ]
 
-    result = await execution_manager.execute_code(req.language, req.code, test_cases)
+    result = await execution_manager.execute_code(req.language, req.code, test_cases, time_limit_ms, memory_limit_mb)
 
     # Log the execution
     db_execution = models.Execution(

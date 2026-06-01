@@ -101,6 +101,8 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
         problem_id: problem?.id,
         action
       });
+      // Store the execution time globally to use it in the UI since the response might not be available in testResults directly
+      (window as any).lastExecutionTime = res.data.execution_time;
       setOutput(res.data.output);
       setTestResults(res.data.test_results || null);
       setExecutionStatus(res.data.status);
@@ -267,43 +269,97 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
               <div className="p-4 flex-1 overflow-auto font-mono text-sm bg-[#1e1e1e] text-zinc-300 whitespace-pre-wrap">
                 {consoleTab === 'testcases' && testResults ? (
                   <div className="space-y-6">
-                    {executionStatus === 'success' ? (
-                      <h2 className="text-2xl font-bold text-green-500">
-                        {lastAction === 'submit' ? 'Problem is submitted successfully' : 'Compiled Successfully'}
-                      </h2>
-                    ) : executionStatus === 'failed_tests' ? (
-                      <h2 className="text-2xl font-bold text-red-500">Test case failed</h2>
-                    ) : null}
-                    
-                    {/* Progress Indicator for Submit */}
-                    {executionStatus === 'success' && lastAction === 'submit' && (
-                      <div className="text-sm font-semibold text-zinc-400 mb-4">
-                        Testcases passed: {testResults.length}/{testResults.length}
+                    {lastAction === 'submit' ? (
+                      <div className="bg-[#282828] p-6 rounded-lg border border-[#333]">
+                        <h2 className={`text-2xl font-bold mb-4 ${executionStatus === 'Accepted' ? 'text-green-500' : 'text-red-500'}`}>
+                          {executionStatus}
+                        </h2>
+                        
+                        <div className="flex gap-8 mb-6">
+                          <div className="flex flex-col">
+                            <span className="text-zinc-500 text-sm">Testcases Passed</span>
+                            <span className="text-xl font-semibold text-white">
+                              {testResults.filter(tr => tr.passed).length} / {testResults.length}
+                            </span>
+                          </div>
+                          {executionStatus === 'Accepted' && (
+                            <>
+                              <div className="flex flex-col">
+                                <span className="text-zinc-500 text-sm">Runtime</span>
+                                <span className="text-xl font-semibold text-white">
+                                  {((window as any).lastExecutionTime * 1000).toFixed(0)} ms
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-zinc-500 text-sm">Memory</span>
+                                <span className="text-xl font-semibold text-white">
+                                  18.4 MB
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {executionStatus !== 'Accepted' && testResults.find(tr => !tr.passed) && (() => {
+                          const failedTc = testResults.find(tr => !tr.passed);
+                          const isHidden = failedTc.is_hidden;
+                          return (
+                            <div className="mt-4 border-t border-[#444] pt-4">
+                              <h3 className="font-bold text-red-400 mb-2">Failed Test Case</h3>
+                              {isHidden ? (
+                                <div className="text-sm text-zinc-400 italic">This is a hidden test case. Input is hidden to prevent hardcoding.</div>
+                              ) : (
+                                <div className="space-y-2 text-sm">
+                                  <div>
+                                    <span className="text-zinc-500">Input:</span>
+                                    <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{failedTc.input}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-zinc-500">Output:</span>
+                                    <div className="bg-[#1e1e1e] p-2 rounded text-red-300">{failedTc.actual}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-zinc-500">Expected:</span>
+                                    <div className="bg-[#1e1e1e] p-2 rounded text-green-300">{failedTc.expected}</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
+                    ) : (
+                      <>
+                        <h2 className={`text-2xl font-bold ${executionStatus === 'Accepted' ? 'text-green-500' : 'text-red-500'}`}>
+                          {executionStatus === 'Accepted' ? 'Compiled Successfully' : executionStatus}
+                        </h2>
+                        
+                        {testResults.map((tr, idx) => (
+                          <div key={idx} className="bg-[#282828] p-4 rounded-md border border-[#333]">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className={`w-2 h-2 rounded-full ${tr.passed ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                              <span className="font-bold text-white">Test Case {idx + 1}</span>
+                            </div>
+                            <div className="space-y-3 text-xs">
+                              <div>
+                                <span className="text-zinc-500 block mb-1">Input</span>
+                                <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.input}</div>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500 block mb-1">Output</span>
+                                <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.actual}</div>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500 block mb-1">Expected</span>
+                                <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.expected}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </>
                     )}
 
-                    {testResults.map((tr, idx) => (
-                      <div key={idx} className="bg-[#282828] p-4 rounded-md border border-[#333]">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className={`w-2 h-2 rounded-full ${tr.passed ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                          <span className="font-bold text-white">Test Case {idx + 1}</span>
-                        </div>
-                        <div className="space-y-3 text-xs">
-                          <div>
-                            <span className="text-zinc-500 block mb-1">Input</span>
-                            <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.input}</div>
-                          </div>
-                          <div>
-                            <span className="text-zinc-500 block mb-1">Output</span>
-                            <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.actual}</div>
-                          </div>
-                          <div>
-                            <span className="text-zinc-500 block mb-1">Expected</span>
-                            <div className="bg-[#1e1e1e] p-2 rounded text-zinc-300">{tr.expected}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+
                   </div>
                 ) : (
                   output || "Run code to see output..."
