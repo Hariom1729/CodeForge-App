@@ -21,6 +21,10 @@ class ProblemListResponse(BaseModel):
 
 class ProblemDetailResponse(ProblemListResponse):
     description: str
+    examples: list
+    constraints: list
+    time_limit_ms: int
+    starter_code: dict
 
 @router.get("", response_model=List[ProblemListResponse])
 async def list_problems(skip: int = 0, limit: int = 1000, db: AsyncSession = Depends(get_db)):

@@ -17,7 +17,7 @@ const DEFAULT_SNIPPETS: Record<string, string> = {
 
 export default function IDEWorkspace({ projectId }: { projectId?: string }) {
   const [selectedLanguage, setSelectedLanguage] = useState('cpp');
-  const [code, setCode] = useState(DEFAULT_SNIPPETS['cpp']);
+  const [code, setCode] = useState('');
   const [output, setOutput] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
@@ -46,6 +46,7 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
       if (projectId && projectId !== 'demo') {
         api.get(`/problems/${projectId}`).then(res => {
           setProblem(res.data);
+          setCode(res.data.starter_code[selectedLanguage]);
         }).catch(err => console.error("Failed to fetch problem", err));
       } else {
         // Fallback for demo mode
@@ -55,15 +56,32 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
           difficulty: "Medium",
           description: "In the universe Earth C-137, Rick discovered a special form of magnetic force between two balls if they are put in his new invented basket. Rick has `n` empty baskets, the `i-th` basket is at `position[i]`, Morty has `m` balls and needs to distribute the balls into the baskets such that the **minimum magnetic force** between any two balls is **maximum**.\n\nRick stated that magnetic force between two different balls at positions `x` and `y` is `|x - y|`.\n\nGiven the integer array `position` and the integer `m`. Return *the required force*.",
           likes: 1800,
-          dislikes: 100
+          dislikes: 100,
+          examples: [
+            { input: "position = [1,2,3,4,7], m = 3", output: "3", explanation: "Distributing the 3 balls into baskets 1, 4 and 7 will make the magnetic force between ball pairs [3, 3, 6]. The minimum magnetic force is 3. We cannot achieve a larger minimum magnetic force than 3." }
+          ],
+          constraints: [
+            "n == position.length",
+            "2 <= n <= 10^5",
+            "1 <= position[i] <= 10^9",
+            "All integers in position are distinct.",
+            "2 <= m <= position.length"
+          ],
+          time_limit_ms: 2000,
+          starter_code: DEFAULT_SNIPPETS
         });
+        setCode(DEFAULT_SNIPPETS[selectedLanguage]);
       }
     });
   }, [projectId]);
 
   const handleLanguageChange = (lang: string) => {
     setSelectedLanguage(lang);
-    setCode(DEFAULT_SNIPPETS[lang]);
+    if (problem && problem.starter_code) {
+        setCode(problem.starter_code[lang] || DEFAULT_SNIPPETS[lang]);
+    } else {
+        setCode(DEFAULT_SNIPPETS[lang]);
+    }
   };
 
   const handleExecute = async () => {
@@ -146,6 +164,39 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
                 <div className="space-y-5 text-zinc-300 prose prose-invert max-w-none">
                   <ReactMarkdown>{problem.description}</ReactMarkdown>
                 </div>
+
+                {problem.examples && problem.examples.length > 0 && (
+                  <div className="mt-8 space-y-6">
+                    {problem.examples.map((ex: any, idx: number) => (
+                      <div key={idx}>
+                        <p className="font-bold text-white mb-3">Example {idx + 1}:</p>
+                        <div className="bg-[#3e3e3e] p-4 rounded-lg font-mono text-sm border-l-2 border-[#8c8c8c]">
+                          <strong>Input:</strong> {ex.input}<br/>
+                          <strong>Output:</strong> {ex.output}<br/>
+                          {ex.explanation && (
+                            <><strong>Explanation:</strong> {ex.explanation}</>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {problem.constraints && problem.constraints.length > 0 && (
+                  <div className="mt-8">
+                    <p className="font-bold text-white mb-3 flex items-center gap-2">
+                       Constraints:
+                       <span className="text-xs font-normal text-red-400 border border-red-400 px-2 py-0.5 rounded ml-4">
+                         Time Limit: {problem.time_limit_ms}ms
+                       </span>
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1.5 text-sm text-zinc-300 font-mono bg-[#282828] p-4 rounded-lg border border-[#333]">
+                      {problem.constraints.map((c: string, idx: number) => (
+                        <li key={idx}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
           </div>

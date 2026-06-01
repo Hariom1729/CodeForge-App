@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, Text, DateTime
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, Text, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from database import Base
 
@@ -56,3 +56,8 @@ class Problem(Base):
     description = Column(Text, nullable=True)
     likes = Column(Integer, default=0)
     dislikes = Column(Integer, default=0)
+    examples = Column(JSON, default=list)
+    constraints = Column(JSON, default=list)
+    time_limit_ms = Column(Integer, default=2000)
+    test_cases = Column(JSON, default=list)
+    starter_code = Column(JSON, default=dict)
