@@ -20,11 +20,10 @@ async def startup():
         # In production, use Alembic
         await conn.run_sync(Base.metadata.create_all)
 
-import auth, projects, files, problem_router, execution_router, admin_router, problems
+import auth, projects, files, execution_router, admin_router, problems
 app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(files.router)
-app.include_router(problem_router.router)
 app.include_router(execution_router.router)
 app.include_router(admin_router.router)
 app.include_router(problems.router)
