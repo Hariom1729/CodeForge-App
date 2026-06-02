@@ -12,7 +12,8 @@ const DEFAULT_SNIPPETS: Record<string, string> = {
   'cpp': '#include <iostream>\nusing namespace std;\n\nbool isAnswer(vector<int>& position, int m, int mid) {\n    // Write your logic here\n    return true;\n}\n\nint main() {\n    cout << "Ready to solve!" << endl;\n    return 0;\n}',
   'python': 'class Solution:\n    def solve(self) -> int:\n        pass\n\nprint("Ready to solve!")',
   'go': 'package main\n\nimport "fmt"\n\nfunc solve() int {\n    return 0\n}\n\nfunc main() {\n    fmt.Println("Ready to solve!")\n}',
-  'rust': 'impl Solution {\n    pub fn solve() -> i32 {\n        0\n    }\n}\n\nfn main() {\n    println!("Ready to solve!");\n}'
+  'rust': 'impl Solution {\n    pub fn solve() -> i32 {\n        0\n    }\n}\n\nfn main() {\n    println!("Ready to solve!");\n}',
+  'javascript': 'class Solution {\n    solve() {\n        return 0;\n    }\n}\n\nconsole.log("Ready to solve!");'
 };
 
 export default function IDEWorkspace({ projectId }: { projectId?: string }) {
@@ -240,6 +241,7 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
                   <option value="python">Python</option>
                   <option value="go">Go</option>
                   <option value="rust">Rust</option>
+                  <option value="javascript">JavaScript</option>
                 </select>
               </div>
               <div className="flex items-center gap-4 text-zinc-400">

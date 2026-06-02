@@ -11,7 +11,8 @@ const DEFAULT_SNIPPETS: Record<string, string> = {
   'cpp': '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, CodeForge Playground!" << endl;\n    return 0;\n}',
   'python': 'def main():\n    print("Hello, CodeForge Playground!")\n\nif __name__ == "__main__":\n    main()',
   'go': 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, CodeForge Playground!")\n}',
-  'rust': 'fn main() {\n    println!("Hello, CodeForge Playground!");\n}'
+  'rust': 'fn main() {\n    println!("Hello, CodeForge Playground!");\n}',
+  'javascript': 'function main() {\n    console.log("Hello, CodeForge Playground!");\n}\n\nmain();'
 };
 
 export default function PlaygroundWorkspace() {
@@ -123,6 +124,7 @@ export default function PlaygroundWorkspace() {
                 <option value="python">Python</option>
                 <option value="go">Go</option>
                 <option value="rust">Rust</option>
+                <option value="javascript">JavaScript</option>
               </select>
             </div>
             <div className="flex items-center gap-4 text-zinc-400">
