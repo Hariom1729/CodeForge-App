@@ -13,6 +13,9 @@ export default function LandingPage() {
             <span className="font-bold text-xl tracking-tight">CodeForge</span>
           </div>
           <div className="flex gap-4">
+            <Link href="/playground">
+              <Button variant="ghost" className="text-zinc-300 hover:text-white">Playground</Button>
+            </Link>
             <Button variant="ghost" className="text-zinc-300 hover:text-white">Log in</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">Get Started</Button>
           </div>

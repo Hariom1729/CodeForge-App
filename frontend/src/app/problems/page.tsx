@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
-import { Code2, Search, CheckCircle2 } from "lucide-react";
+import { Code2, Search, CheckCircle2, Terminal } from "lucide-react";
 
 export default function ProblemList() {
   const [problems, setProblems] = useState<any[]>([]);
@@ -37,11 +37,18 @@ export default function ProblemList() {
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-zinc-300 font-sans">
       {/* Top Navbar */}
-      <div className="h-14 border-b border-[#333] flex items-center px-8 bg-[#282828]">
-        <div className="font-bold text-xl text-white flex items-center gap-2">
-          <Code2 className="text-orange-500" />
-          CodeForge
-        </div>
+      <div className="h-14 border-b border-[#333] flex items-center justify-between px-8 bg-[#282828]">
+        <Link href="/">
+          <div className="font-bold text-xl text-white flex items-center gap-2 cursor-pointer">
+            <Code2 className="text-orange-500" />
+            CodeForge
+          </div>
+        </Link>
+        <Link href="/playground">
+          <div className="flex items-center gap-2 text-sm bg-[#333] px-4 py-2 rounded-md text-zinc-300 font-semibold cursor-pointer hover:bg-[#444] transition-colors">
+            <Terminal size={16}/> Playground
+          </div>
+        </Link>
       </div>
 
       {/* Main Content */}

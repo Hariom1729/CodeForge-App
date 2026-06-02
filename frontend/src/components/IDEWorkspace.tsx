@@ -130,6 +130,11 @@ export default function IDEWorkspace({ projectId }: { projectId?: string }) {
               <List size={16}/> Problem List
             </div>
           </Link>
+          <Link href="/playground">
+            <div className="flex items-center gap-2 text-sm bg-[#333] px-3 py-1.5 rounded-md text-zinc-300 font-semibold cursor-pointer hover:bg-[#444] transition-colors">
+              <Terminal size={16}/> Playground
+            </div>
+          </Link>
         </div>
         <div className="flex gap-2">
           <Button 
