@@ -8,6 +8,7 @@ from database import get_db
 import models, schemas
 from auth import get_current_user
 from execution_manager import execution_manager
+from fastapi import Header
 
 router = APIRouter(prefix="/api/v1/execute", tags=["execute"])
 
@@ -73,3 +74,49 @@ async def execute_code(
         status=result["status"],
         test_results=result.get("test_results")
     )
+
+@router.post("/external", response_model=ExecutionResponse)
+async def execute_code_external(
+    req: ExecutionRequest,
+    x_api_key: str = Header(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Dedicated endpoint for external projects (like Axiora) to execute code.
+    Secured by a static API Key.
+    """
+    # Replace this with a secure key or load from config/env
+    VALID_API_KEY = "axiora_secret_live_key_2026"
+    
+    if x_api_key != VALID_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+        
+    time_limit_ms = 2000
+    memory_limit_mb = 256
+    
+    result = await execution_manager.execute_code(
+        req.language, 
+        req.code, 
+        [], 
+        time_limit_ms, 
+        memory_limit_mb
+    )
+
+    # Optional: Log the execution without a user_id for analytics
+    db_execution = models.Execution(
+        user_id=None,
+        project_id=None,
+        language=req.language,
+        execution_time=result["execution_time"],
+        status=result["status"],
+        output=result["output"]
+    )
+    db.add(db_execution)
+    await db.commit()
+
+    return ExecutionResponse(
+        output=result["output"],
+        execution_time=result["execution_time"],
+        status=result["status"]
+    )
+
