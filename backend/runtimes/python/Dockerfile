@@ -1,13 +1,5 @@
-FROM python:3.11-slim
-
-# Create a non-root user
-RUN useradd -m -s /bin/bash runner
-
-# Set working directory
+FROM python:3.11-alpine
+RUN adduser -D runner
 WORKDIR /code
-
-# Switch to non-root user
 USER runner
-
-# Run the python script
 CMD ["python", "main.py"]

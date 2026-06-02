@@ -1,10 +1,5 @@
-FROM golang:1.21
-
-RUN useradd -m -s /bin/bash runner
-
+FROM golang:1.21-alpine
+RUN adduser -D runner
 WORKDIR /code
-
 USER runner
-
-# The command will be overridden by the execution manager
-CMD ["/bin/bash"]
+CMD ["/bin/sh"]
