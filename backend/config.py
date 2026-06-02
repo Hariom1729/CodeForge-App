@@ -7,5 +7,6 @@ class Settings(BaseModel):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+    EXTERNAL_API_KEY: str = os.getenv("EXTERNAL_API_KEY", "axiora_secret_live_key_2026")
 
 settings = Settings()

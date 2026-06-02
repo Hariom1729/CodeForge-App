@@ -9,6 +9,7 @@ import models, schemas
 from auth import get_current_user
 from execution_manager import execution_manager
 from fastapi import Header
+from config import settings
 
 router = APIRouter(prefix="/api/v1/execute", tags=["execute"])
 
@@ -85,10 +86,8 @@ async def execute_code_external(
     Dedicated endpoint for external projects (like Axiora) to execute code.
     Secured by a static API Key.
     """
-    # Replace this with a secure key or load from config/env
-    VALID_API_KEY = "axiora_secret_live_key_2026"
     
-    if x_api_key != VALID_API_KEY:
+    if x_api_key != settings.EXTERNAL_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
         
     time_limit_ms = 2000
